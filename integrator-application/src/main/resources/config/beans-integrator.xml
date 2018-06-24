@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+	
+	<bean id="readImage"
+		class="org.springframework.batch.item.database.JdbcCursorItemReader"
+		scope="step">
+		<property name="dataSource" ref="sngDataSource" />
+		<property name="sql">
+			<value>
+		         <![CDATA[
+ 				 select numemp
+ 				 	   ,fotemp 
+ 				   from mbn.r034fot 
+ 				  where rownum <= 1
+		         ]]>
+			</value>
+		</property>
+		<property name="rowMapper">
+			<bean
+				class="br.com.nextel.integrator.job.mapper.FotoRowMapper" />
+		</property>
+	</bean>
+	
+	<bean id="writeImage"
+		class="org.springframework.batch.item.database.JdbcBatchItemWriter"
+		scope="step">
+		<property name="dataSource" ref="sngDataSource" />
+		<property name="sql">
+			<value>
+		         <![CDATA[
+				INSERT INTO mbn.teste(NUMERO
+									,FOTO)
+				                                VALUES(:numemp
+				                                      ,:foto)			
+		         ]]>
+			</value>
+		</property>
+		<property name="itemSqlParameterSourceProvider">
+			<bean
+				class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+		</property>
+	</bean>
+	
+	<bean class="br.com.nextel.integrator.job.processor.FotoProcessor" id="fotoProcessor">
+	</bean>
+	
+</beans>

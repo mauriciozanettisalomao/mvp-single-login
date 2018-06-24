@@ -1,0 +1,50 @@
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<formats>
+		<format>zip</format>
+	</formats>
+
+	<dependencySets>
+		<dependencySet>
+			<useProjectArtifact>false</useProjectArtifact>
+			<outputDirectory>workflow-integrator/lib</outputDirectory>
+		</dependencySet>
+	</dependencySets>
+
+	<fileSets>
+		<fileSet>
+			<directory>target</directory>
+			<outputDirectory>workflow-integrator/lib</outputDirectory>
+			<includes>
+				<include>workflow-integrator-application-1.0.0.jar</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/resources/config</directory>
+			<outputDirectory>workflow-integrator/config</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>
+			<excludes>
+				<exclude>**/.metadata/**</exclude>
+			</excludes>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/resources</directory>
+			<outputDirectory>workflow-integrator/config</outputDirectory>
+			<includes>
+				<include>log4j.xml</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>.</directory>
+			<outputDirectory>workflow-integrator</outputDirectory>
+			<includes>
+				<include>run.sh</include>
+			</includes>
+		</fileSet>
+	</fileSets>
+</assembly>

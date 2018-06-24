@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"  
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       		http://www.springframework.org/schema/beans   
+	   		http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-4.3.xsd		   		  
+            http://www.springframework.org/schema/batch   
+            http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+        	http://www.springframework.org/schema/jdbc
+        	http://www.springframework.org/schema/jdbc/spring-jdbc-4.3.xsd
+	        http://www.springframework.org/schema/tx
+	        http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+	        http://www.springframework.org/schema/util
+	        http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+	        
+	<import resource="/beans-integrator.xml" />
+
+	<context:annotation-config />	
+	<context:component-scan base-package="br.com.nextel.integrator.db" />  	
+	
+	<!-- Jasypt Configuration -->
+
+	<bean id="environmentVariablesConfiguration"
+	     class="org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig">
+	   <property name="algorithm" value="PBEWithMD5AndDES" />
+	   <property name="passwordEnvName" value="ENV_SPRING_BATCH_PASS" />
+	 </bean>
+
+	<bean id="configurationEncryptor"
+	     class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+	   <property name="config" ref="environmentVariablesConfiguration" />
+	 </bean>
+	 
+	 <bean id="propertyConfigurer"
+	     class="org.jasypt.spring31.properties.EncryptablePropertyPlaceholderConfigurer">
+	   <constructor-arg ref="configurationEncryptor" />
+	   <property name="locations">
+	     <list>
+	       <value>classpath:config/database.properties</value>
+	       <value>classpath:config/password.properties</value>
+	       <value>classpath:config/integrator.properties</value>
+	     </list>
+	   </property>	   
+	 </bean>	
+	
+	<!-- Database Configuration -->
+ 
+  	<bean id="sngDataSource"
+  		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.single.driverClassName}" />
+		<property name="url" value="${jdbc.single.url}" />
+		<property name="username" value="${jdbc.single.user}" />
+		<property name="password" value="${jdbc.single.pass}" />
+	</bean>
+ 
+ 	<bean id="controlDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.sbc.driverClassName}" />
+		<property name="url" value="${jdbc.sbc.url}" />
+		<property name="username" value="${jdbc.sbc.user}" />
+		<property name="password" value="${jdbc.sbc.pass}" />
+	</bean>
+ 
+	<tx:annotation-driven />
+	<bean id="transactionManager"
+		class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />	
+
+	<!-- Spring Batch Configuration -->
+	
+<!-- 	<bean id="jobRepository" -->
+<!-- 		class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean"> -->
+<!-- 		<property name="dataSource" ref="controlDataSource" /> -->
+<!-- 		<property name="transactionManager" ref="transactionManager" /> -->
+<!-- 		<property name="databaseType" value="oracle" /> -->
+<!-- 		<property name="tablePrefix" value="SBC.BATCH_"/> -->
+<!-- 	</bean> -->
+
+	<bean id="jobRepository"
+	  	class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+	    <property name="transactionManager" ref="transactionManager"/>
+	</bean>
+ 
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+	<bean class=" br.com.nextel.integrator.main.IntegratorJobExitCodeMapper" />
+	<bean id="jobExitCodeListener" class="br.com.nextel.integrator.job.listener.IntegratorJobExecutionListener" />
+
+	<batch:job id="loadImage">
+
+		<batch:step id="loadImageStep">
+			<batch:tasklet allow-start-if-complete="true">
+				<batch:chunk reader="readImage" 
+							processor="fotoProcessor"
+							writer="writeImage"
+					commit-interval="${commit.interval}">
+				</batch:chunk>
+			</batch:tasklet>
+		</batch:step>
+		
+		<batch:listeners>
+			<batch:listener ref="jobExitCodeListener" />
+		</batch:listeners>	
+
+	</batch:job>
+
+</beans>
